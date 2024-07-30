@@ -1,0 +1,40 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Cursor
+
+# Read the image
+image_path = '/content/Virgo.jpg'
+image = cv2.imread(image_path)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+# Convert the image to an array of color points
+pixels = image.reshape((-1, 3))
+
+# Set parameters for K-means
+num_clusters = 10
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+attempts = 10
+
+# Perform K-means clustering
+ret, labels, centers = cv2.kmeans(pixels.astype(np.float32), num_clusters, None, criteria, attempts, cv2.KMEANS_RANDOM_CENTERS)
+
+# Compute the distance from each point to all cluster centers
+distances = np.sqrt(((pixels[:, np.newaxis] - centers) ** 2).sum(axis=2))
+
+# Select the distance to the nearest cluster
+min_distances = distances[np.arange(distances.shape[0]), labels.flatten()]
+
+# Sort distances in descending order
+sorted_indices = np.argsort(min_distances)[::-1]
+sorted_distances = min_distances[sorted_indices]
+
+# Plot the graph
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(sorted_distances, linestyle='-', color='b', linewidth=0.5)  # Thin line with linewidth=0.5
+ax.set_title(f'Sorting Maximum Distance in k Nearest Neighbor of kNN')
+ax.set_xlabel('Index ')
+ax.set_ylabel('Distance ')
+ax.grid(True)
+
+plt.show()
