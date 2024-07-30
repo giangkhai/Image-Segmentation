@@ -1,0 +1,68 @@
+pip install scikit-image
+
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage import io, color
+from skimage.restoration import denoise_wavelet
+from skimage.filters import threshold_otsu
+from skimage.io import imsave
+
+# Read the image and convert it to grayscale
+image = io.imread('/content/shock.jpg')
+gray_image = color.rgb2gray(image)
+
+# Perform wavelet denoising
+wavelet_name = 'db1'
+denoised_image = denoise_wavelet(gray_image, method='BayesShrink', mode='soft', wavelet=wavelet_name)
+
+# Determine 4 thresholds using Otsu's method (or other methods)
+thresh1 = threshold_otsu(denoised_image)
+thresh2 = thresh1 + (1.0 - thresh1) / 3
+thresh3 = thresh1 + 2 * (1.0 - thresh1) / 3
+thresh4 = 4 * thresh1 / 3
+
+# Create a segmented image with different grayscale values for each region
+segmented_image = np.zeros_like(denoised_image)
+
+# Different grayscale values for each region
+values = [50, 100, 150, 200]
+
+# Segment the image based on thresholds
+segmented_image[denoised_image <= thresh1] = values[0]
+segmented_image[(denoised_image > thresh1) & (denoised_image <= thresh2)] = values[1]
+segmented_image[(denoised_image > thresh2) & (denoised_image <= thresh3)] = values[2]
+segmented_image[denoised_image > thresh3] = values[3]
+
+# Convert images to uint8 format before saving
+def normalize_to_uint8(image):
+    image = (image - image.min()) / (image.max() - image.min()) * 255
+    return image.astype(np.uint8)
+
+# Convert images
+gray_image_uint8 = normalize_to_uint8(gray_image)
+denoised_image_uint8 = normalize_to_uint8(denoised_image)
+segmented_image_uint8 = normalize_to_uint8(segmented_image)
+
+# Display results
+fig, ax = plt.subplots(1, 4, figsize=(20, 5))
+ax[0].imshow(gray_image_uint8, cmap='gray')
+ax[0].set_title('Original Image')
+ax[1].imshow(denoised_image_uint8, cmap='gray')
+ax[1].set_title('Denoised Image')
+ax[2].imshow(segmented_image_uint8, cmap='gray')
+ax[2].set_title('Segmented Image')
+
+# Create a mask for each region
+for i, val in enumerate(values):
+    mask = segmented_image_uint8 == val
+    ax[3].imshow(mask, cmap='gray')
+    ax[3].set_title(f'Value {val}')
+
+for a in ax:
+    a.axis('off')
+
+plt.show()
+
+# Save the segmented and original grayscale images
+imsave('/content/gray_image.png', gray_image_uint8)
+imsave('/content/segmented_image.png', segmented_image_uint8)
