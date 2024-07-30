@@ -8,15 +8,15 @@ from sklearn.cluster import AgglomerativeClustering
 import time
 import matplotlib.pyplot as plt
 
-# Đọc ảnh và chuyển đổi sang ảnh xám
-image_path = '/content/M35.jpg'  # Thay đổi đường dẫn theo ảnh của bạn
+# Load the image and convert to grayscale
+image_path = '/content/M35.jpg'  # Change the path according to your image
 orig_coins = cv2.imread(image_path)
 orig_coins = cv2.cvtColor(orig_coins, cv2.COLOR_BGR2GRAY)
 
-# Áp dụng bộ lọc Gaussian để làm mịn trước khi giảm kích thước
+# Apply Gaussian filter to smooth before resizing
 smoothened_coins = gaussian_filter(orig_coins, sigma=2)
 
-# Giảm kích thước ảnh xuống 20% kích thước gốc để tăng tốc độ xử lý
+# Rescale the image to 20% of the original size to speed up processing
 rescaled_coins = rescale(
     smoothened_coins,
     0.2,
@@ -24,19 +24,19 @@ rescaled_coins = rescale(
     anti_aliasing=False,
 )
 
-# Chuyển đổi ảnh thành mảng 2 chiều cho phân cụm
+# Convert the image to a 2D array for clustering
 X = np.reshape(rescaled_coins, (-1, 1))
 
-# Tạo kết nối cho phân cụm
+# Create connectivity for clustering
 connectivity = grid_to_graph(*rescaled_coins.shape)
 
-# Thực hiện phân cụm phân cấp
-n_clusters = 150  # Số lượng cụm
+# Perform hierarchical clustering
+n_clusters = 150  # Number of clusters
 ward = AgglomerativeClustering(
     n_clusters=n_clusters, linkage="ward", connectivity=connectivity
 )
 
-# Tính toán phân cụm và gán nhãn cho các pixel
+# Compute clustering and assign labels to pixels
 st = time.time()
 ward.fit(X)
 label = np.reshape(ward.labels_, rescaled_coins.shape)
@@ -44,7 +44,7 @@ print(f"Elapsed time: {time.time() - st:.3f}s")
 print(f"Number of pixels: {label.size}")
 print(f"Number of clusters: {np.unique(label).size}")
 
-# Hiển thị ảnh phân đoạn
+# Display the segmented image
 plt.figure(figsize=(5, 5))
 plt.imshow(rescaled_coins, cmap=plt.cm.gray)
 for l in range(n_clusters):
@@ -55,18 +55,18 @@ for l in range(n_clusters):
 plt.axis("off")
 
 # Save the segmented image
-output_path = '/content/segmented_image.png'  # Đường dẫn lưu ảnh phân đoạn
+output_path = '/content/segmented_image.png'  # Path to save the segmented image
 plt.savefig(output_path, bbox_inches='tight', pad_inches=0, transparent=True)
 plt.close()
 
 print(f"Segmented image saved to {output_path}")
 
-# Tạo liên kết cho dendrogram
+# Create linkage for dendrogram
 Z = linkage(X, method='ward')
 
-# Vẽ dendrogram
+# Plot dendrogram
 plt.figure(figsize=(10, 7))
-dendrogram(Z, truncate_mode='level', p=5)  # Bạn có thể điều chỉnh truncate_mode và p theo nhu cầu của mình
+dendrogram(Z, truncate_mode='level', p=5)  # You can adjust truncate_mode and p as needed
 plt.title('Dendrogram for the clustered image')
 plt.xlabel('Sample index or (cluster size)')
 plt.ylabel('Distance')
