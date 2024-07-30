@@ -1,0 +1,77 @@
+import cv2
+import numpy as np
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.ndimage import gaussian_filter
+from skimage.transform import rescale
+from sklearn.feature_extraction.image import grid_to_graph
+from sklearn.cluster import AgglomerativeClustering
+import time
+import matplotlib.pyplot as plt
+
+# Đọc ảnh và chuyển đổi sang ảnh xám
+image_path = '/content/M35.jpg'  # Thay đổi đường dẫn theo ảnh của bạn
+orig_coins = cv2.imread(image_path)
+orig_coins = cv2.cvtColor(orig_coins, cv2.COLOR_BGR2GRAY)
+
+# Áp dụng bộ lọc Gaussian để làm mịn trước khi giảm kích thước
+smoothened_coins = gaussian_filter(orig_coins, sigma=2)
+
+# Giảm kích thước ảnh xuống 20% kích thước gốc để tăng tốc độ xử lý
+rescaled_coins = rescale(
+    smoothened_coins,
+    0.2,
+    mode="reflect",
+    anti_aliasing=False,
+)
+
+# Chuyển đổi ảnh thành mảng 2 chiều cho phân cụm
+X = np.reshape(rescaled_coins, (-1, 1))
+
+# Tạo kết nối cho phân cụm
+connectivity = grid_to_graph(*rescaled_coins.shape)
+
+# Thực hiện phân cụm phân cấp
+n_clusters = 150  # Số lượng cụm
+ward = AgglomerativeClustering(
+    n_clusters=n_clusters, linkage="ward", connectivity=connectivity
+)
+
+# Tính toán phân cụm và gán nhãn cho các pixel
+st = time.time()
+ward.fit(X)
+label = np.reshape(ward.labels_, rescaled_coins.shape)
+print(f"Elapsed time: {time.time() - st:.3f}s")
+print(f"Number of pixels: {label.size}")
+print(f"Number of clusters: {np.unique(label).size}")
+
+# Hiển thị ảnh phân đoạn
+plt.figure(figsize=(5, 5))
+plt.imshow(rescaled_coins, cmap=plt.cm.gray)
+for l in range(n_clusters):
+    plt.contour(
+        label == l,
+        colors=[plt.cm.nipy_spectral(l / float(n_clusters))],
+    )
+plt.axis("off")
+
+# Save the segmented image
+output_path = '/content/segmented_image.png'  # Đường dẫn lưu ảnh phân đoạn
+plt.savefig(output_path, bbox_inches='tight', pad_inches=0, transparent=True)
+plt.close()
+
+print(f"Segmented image saved to {output_path}")
+
+# Tạo liên kết cho dendrogram
+Z = linkage(X, method='ward')
+
+# Vẽ dendrogram
+plt.figure(figsize=(10, 7))
+dendrogram(Z, truncate_mode='level', p=5)  # Bạn có thể điều chỉnh truncate_mode và p theo nhu cầu của mình
+plt.title('Dendrogram for the clustered image')
+plt.xlabel('Sample index or (cluster size)')
+plt.ylabel('Distance')
+dendrogram_path = '/content/dendrogram.png'
+plt.savefig(dendrogram_path, bbox_inches='tight', pad_inches=0, transparent=True)
+plt.close()
+
+print(f"Dendrogram saved to {dendrogram_path}")
