@@ -1,3 +1,7 @@
+
+
+pip install pywavelets
+
 pip install scikit-image
 
 import numpy as np
