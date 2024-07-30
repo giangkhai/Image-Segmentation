@@ -1,0 +1,61 @@
+import cv2
+import numpy as np
+from hmmlearn import hmm
+from matplotlib import pyplot as plt
+
+# Load and preprocess the image
+image_path = '/content/2stars.jpg'
+I = cv2.imread(image_path)
+I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
+I = cv2.resize(I, (400, 400))  # Resize for demonstration
+I = I / 255.0  # Normalize to [0, 1]
+
+# Reshape the image into a 2D array where each row is a pixel and columns are color channels
+[M, N, C] = I.shape
+X = I.reshape((-1, C))  # X will be an (M*N, C) array
+
+# Define the HMM model
+num_components = 8  # Number of segments (clusters)
+model = hmm.GaussianHMM(n_components=num_components, covariance_type="diag", n_iter=100)
+
+# Fit the model
+model.fit(X)
+
+# Predict the labels
+labels = model.predict(X)
+
+# Reshape labels back to the original image shape
+L = labels.reshape((M, N))
+
+# Create a segmented image by assigning a color to each label
+unique_labels = np.unique(L)
+colors = plt.cm.get_cmap('rainbow', len(unique_labels))
+
+segmented_image = np.zeros((M, N, 3))
+for i, label in enumerate(unique_labels):
+    mask = L == label
+    segmented_image[mask] = colors(i)[:3]  # Apply the color to the segmented area
+
+# Plotting
+plt.figure(figsize=(12, 6))
+
+plt.subplot(1, 3, 1)
+plt.imshow(I)
+plt.title('Original Image')
+plt.axis('off')
+
+plt.subplot(1, 3, 2)
+plt.imshow(L, cmap='rainbow')
+plt.title('HMM Clustering')
+plt.axis('off')
+
+plt.subplot(1, 3, 3)
+plt.imshow(segmented_image)
+plt.title('Segmented Image')
+plt.axis('off')
+
+plt.show()
+
+# Save the segmented image
+segmented_image = (segmented_image * 255).astype(np.uint8)  # Convert back to [0, 255]
+cv2.imwrite('segmented_image.png', cv2.cvtColor(segmented_image, cv2.COLOR_RGB2BGR))
