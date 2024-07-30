@@ -1,0 +1,33 @@
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.cluster import KMeans
+
+# Read and display the image
+img = mpimg.imread('/content/taurus.jpg')
+plt.imshow(img)
+plt.axis('off')
+plt.show()
+
+# Convert the image to a format suitable for K-Means clustering
+X = img.reshape((img.shape[0] * img.shape[1], img.shape[2]))
+
+# Perform K-Means clustering with different numbers of clusters and save the results
+for K in [2, 5, 10, 15, 20]:  # number of clusters
+    kmeans = KMeans(n_clusters=K).fit(X)
+    label = kmeans.predict(X)
+
+    img4 = np.zeros_like(X)
+    # Replace each pixel with the center of its cluster
+    for k in range(K):
+        img4[label == k] = kmeans.cluster_centers_[k]
+
+    # Reshape the image back to its original size and display it
+    img5 = img4.reshape((img.shape[0], img.shape[1], img.shape[2]))
+    plt.imshow(img5, interpolation='nearest')
+    plt.axis('off')
+    plt.title(f'K-Means Clustering with K = {K}')
+    plt.show()
+
+    # Save the clustered image
+    plt.imsave(f'kmeans_clustered_K_{K}.png', img5)
