@@ -1,0 +1,65 @@
+import numpy as np
+import cv2 as cv
+from matplotlib import pyplot as plt
+
+# Read the image
+img = cv.imread('/content/mol.jpg')
+assert img is not None, "file could not be read, check with os.path.exists()"
+
+# Convert to grayscale
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+# Threshold the image using Otsu's method
+ret, thresh = cv.threshold(gray, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+
+# Remove noise
+kernel = np.ones((3,3), np.uint8)
+opening = cv.morphologyEx(thresh, cv.MORPH_OPEN, kernel, iterations=2)
+
+# Sure background area
+sure_bg = cv.dilate(opening, kernel, iterations=3)
+
+# Find sure foreground area
+dist_transform = cv.distanceTransform(opening, cv.DIST_L2, 5)
+ret, sure_fg = cv.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
+
+# Find unknown region
+sure_fg = np.uint8(sure_fg)
+unknown = cv.subtract(sure_bg, sure_fg)
+
+# Label the markers
+ret, markers = cv.connectedComponents(sure_fg)
+
+# Add one to all labels to ensure the sure background is not 0 but 1
+markers = markers + 1
+
+# Mark the unknown regions with 0
+markers[unknown == 255] = 0
+
+# Create a larger kernel to thicken the marker boundaries
+kernel = np.ones((7,7), np.uint8)  # Increase kernel size to thicken
+
+# Dilate the markers
+markers_dilated = cv.dilate(markers.astype(np.uint8), kernel, iterations=2)  # Repeat dilation to thicken
+
+# Convert markers_dilated to CV_32SC1 format
+markers_dilated = markers_dilated.astype(np.int32)
+
+# Apply the Watershed algorithm with the dilated markers
+markers_dilated = cv.watershed(img, markers_dilated)
+img[markers_dilated == -1] = [0, 255, 255]
+
+# Save intermediate images
+cv.imwrite('gray_image.jpg', gray)
+cv.imwrite('thresh_image.jpg', thresh)
+cv.imwrite('opening_image.jpg', opening)
+cv.imwrite('sure_bg_image.jpg', sure_bg)
+cv.imwrite('sure_fg_image.jpg', sure_fg)
+cv.imwrite('unknown_image.jpg', unknown)
+cv.imwrite('markers_image.jpg', markers_dilated)
+cv.imwrite('result_image.jpg', img)
+
+# Display the final result
+plt.imshow(cv.cvtColor(img, cv.COLOR_BGR2RGB))
+plt.axis('off')
+plt.show()
