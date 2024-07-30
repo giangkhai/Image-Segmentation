@@ -1,0 +1,32 @@
+!pip install opencv-python-headless
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Read the image
+image_path = "/content/tvxo.jpg"
+image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+
+# Display and save the original grayscale image
+plt.imshow(image, cmap='gray')
+plt.axis('off')
+plt.savefig('/content/original_grayscale_image.png', bbox_inches='tight', pad_inches=0)
+plt.show()
+
+# Save the original grayscale image as a file
+cv2.imwrite('/content/original_grayscale_image_cv2.png', image)
+
+# Compute Otsu's threshold
+threshold, otsu_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+print(f'Threshold value by Otsu: {threshold}')
+
+# Display and save the Otsu thresholded image
+plt.imshow(otsu_image, cmap='gray')
+plt.axis('off')
+plt.savefig('/content/otsu_thresholded_image.png', bbox_inches='tight', pad_inches=0)
+plt.show()
+
+# Save the Otsu thresholded image as a file
+cv2.imwrite('/content/otsu_thresholded_image_cv2.png', otsu_image)
