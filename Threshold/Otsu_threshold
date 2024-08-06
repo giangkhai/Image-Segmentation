@@ -4,29 +4,18 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Read the image
+# Read the original image
 image_path = "/content/tvxo.jpg"
-image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+image = cv2.imread(image_path)
+img   = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+if image is None:
+    raise FileNotFoundError(f"Image not found at path: {image_path}")
 
-# Display and save the original grayscale image
-plt.imshow(image, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/original_grayscale_image.png', bbox_inches='tight', pad_inches=0)
-plt.show()
+# Convert the image to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# Save the original grayscale image as a file
-cv2.imwrite('/content/original_grayscale_image_cv2.png', image)
+# Apply Otsu's thresholding
+_, otsu_image = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-# Compute Otsu's threshold
-threshold, otsu_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-print(f'Threshold value by Otsu: {threshold}')
-
-# Display and save the Otsu thresholded image
-plt.imshow(otsu_image, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/otsu_thresholded_image.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# Save the Otsu thresholded image as a file
-cv2.imwrite('/content/otsu_thresholded_image_cv2.png', otsu_image)
+# Display the original, grayscale, and Otsu thresholded images
+display([img, gray, otsu_image], ["Original", "Grayscale", "Otsu Thresholded"], (1, 0))
