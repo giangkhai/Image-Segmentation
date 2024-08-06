@@ -1,77 +1,32 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Read the image
+# Read the original image
 image_path = "/content/tvdb.jpg"
-image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+image = cv2.imread(image_path)
+img   = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+if image is None:
+    raise FileNotFoundError(f"Image not found at path: {image_path}")
 
-# Display and save the original image
-plt.imshow(image, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/original_grayscale_image.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# 1. Sobel edge detection in the x direction
-sobel_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
+# Convert the image to grayscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+#1.1 Sobel_x
+sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
 sobel_x = cv2.normalize(sobel_x, None, 0, 255, cv2.NORM_MINMAX)
 sobel_x = np.uint8(sobel_x)
-
-# Display and save the Sobel x image
-plt.imshow(sobel_x, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/sobel_x.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# 2. Sobel edge detection in the y direction
-sobel_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
+#1.2 Sobel_y
+sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
 sobel_y = cv2.normalize(sobel_y, None, 0, 255, cv2.NORM_MINMAX)
 sobel_y = np.uint8(sobel_y)
-
-# Display and save the Sobel y image
-plt.imshow(sobel_y, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/sobel_y.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# 3. Prewitt edge detection in the x direction
+#2.1 Prewitt_x
 prewitt_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
-prewitt_x_edges = cv2.filter2D(image, cv2.CV_64F, prewitt_x)
+prewitt_x_edges = cv2.filter2D(gray, cv2.CV_64F, prewitt_x)
 prewitt_x_edges = cv2.normalize(prewitt_x_edges, None, 0, 255, cv2.NORM_MINMAX)
 prewitt_x_edges = np.uint8(prewitt_x_edges)
-
-# Display and save the Prewitt x image
-plt.imshow(prewitt_x_edges, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/prewitt_x.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# 4. Prewitt edge detection in the y direction
+#2.2 Prewitt_y
 prewitt_y = np.array([[-1, -1, -1], [0, 0, 0], [1, 1, 1]])
-prewitt_y_edges = cv2.filter2D(image, cv2.CV_64F, prewitt_y)
+prewitt_y_edges = cv2.filter2D(gray, cv2.CV_64F, prewitt_y)
 prewitt_y_edges = cv2.normalize(prewitt_y_edges, None, 0, 255, cv2.NORM_MINMAX)
 prewitt_y_edges = np.uint8(prewitt_y_edges)
-
-# Display and save the Prewitt y image
-plt.imshow(prewitt_y_edges, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/prewitt_y.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# 5. Canny edge detection
+#3. Canny
 low_threshold = 50
 high_threshold = 150
-canny_edges = cv2.Canny(image, low_threshold, high_threshold)
-
-# Display and save the Canny edge image
-plt.imshow(canny_edges, cmap='gray')
-plt.axis('off')
-plt.savefig('/content/canny_edges.png', bbox_inches='tight', pad_inches=0)
-plt.show()
-
-# Save the result images
-cv2.imwrite('/content/sobel_x_cv2.png', sobel_x)
-cv2.imwrite('/content/sobel_y_cv2.png', sobel_y)
-cv2.imwrite('/content/prewitt_x_cv2.png', prewitt_x_edges)
-cv2.imwrite('/content/prewitt_y_cv2.png', prewitt_y_edges)
-cv2.imwrite('/content/canny_edges_cv2.png', canny_edges)
+canny_edges = cv2.Canny(gray, low_threshold, high_threshold)
+display([img, gray, canny_edges,sobel_x, sobel_y, prewitt_x_edges, prewitt_y_edges], ["Original", "Original grayscale", "Canny","Sobel x", "Sobel y", "Prewitt x", "Prewitt y"], (1, 0))
