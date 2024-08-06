@@ -3,89 +3,65 @@ import matplotlib.pyplot as plt
 from skimage import io, color, measure
 from skimage.segmentation import relabel_sequential
 import cv2
+# Load and preprocess the image
+image_path = '/content/cloud.jpg'
+image = io.imread(image_path)
+image = cv2.resize(image, (200, 200))
+image = np.array(image) / 255.0  # Normalize to [0, 1]
+image_gray = color.rgb2gray(image)  # Convert to grayscale
 
-# Create a component tree structure
-def create_component_tree(binary_image):
-    # Label connected components
-    labeled_image, num_labels = measure.label(binary_image, connectivity=2, return_num=True)
-    # Relabel the image and get the relabeled image
-    labeled_image = relabel_sequential(labeled_image)[0]
-    return labeled_image, num_labels
+# Binarize the image
+binary_image = image_gray > 0.5  # Threshold value can be adjusted
 
-# Main segmentation function
-def compute_solution(image, marker_image, alpha):
-    # Ensure both images are grayscale
-    if len(image.shape) == 3:
-        image = color.rgb2gray(image)
-    if len(marker_image.shape) == 3:
-        marker_image = color.rgb2gray(marker_image)
+# Compute the connected component tree
+labeled_image, num_labels = measure.label(binary_image, connectivity=2, return_num=True)
+labeled_image = relabel_sequential(labeled_image)[0]  # Relabel and get only the relabeled image
 
-    # Binarize the marker image
-    marker_binary = marker_image > 0.5
-    binary_image = image > 0.5
+# Create a color image for visualization
+colored_labels = np.zeros((labeled_image.shape[0], labeled_image.shape[1], 3))
+for label in np.unique(labeled_image):
+    if label == 0:
+        continue  # Skip the background
+    mask = labeled_image == label
+    colored_labels[mask] = np.random.rand(3)  # Assign random color to each component
 
-    # Create the component tree
-    labeled_image, num_labels = create_component_tree(binary_image)
+# Ensure image is in the correct format for display
+image_display = np.clip(image, 0, 1)  # Clip values to the range [0, 1] for display
 
-    # Initialize cost and F arrays
-    cost = np.zeros_like(labeled_image, dtype=float)
-    F = np.zeros_like(labeled_image, dtype=int)
+# Calculate cost and F values (based on a simple approach for demonstration)
+alpha = 0.5  # Example alpha value, adjust as needed
+cost = np.zeros_like(labeled_image, dtype=float)
+F = np.zeros_like(labeled_image, dtype=int)
 
-    # Calculate cost for each component
-    for v in np.unique(labeled_image):
-        if v == 0:
-            continue  # Skip the background
-        mask = labeled_image == v
-        n_G = np.sum(marker_binary[mask])
-        ps_G = np.sum(~marker_binary[mask])
-        exprl = alpha * n_G
-        exprr = (1 - alpha) * ps_G
-        if exprl < exprr:
-            cost[mask] = exprl
-            F[mask] = v
-        else:
-            cost[mask] = exprr
-            F[mask] = 0
+for v in np.unique(labeled_image):
+    if v == 0:
+        continue  # Skip the background
+    mask = labeled_image == v
+    n_G = np.sum(binary_image[mask])
+    ps_G = np.sum(~binary_image[mask])
+    if alpha * n_G < (1 - alpha) * ps_G:
+        cost[labeled_image == v] = alpha * n_G
+        F[labeled_image == v] = v
+    else:
+        cost[labeled_image == v] = (1 - alpha) * ps_G
+        F[labeled_image == v] = 0
 
-    return labeled_image, cost, F
+# Display the results
+plt.figure(figsize=(15, 5))
 
-# Example usage
-def main(image_path, marker_image_path, alpha):
-    image = io.imread(image_path)
-    marker_image = io.imread(marker_image_path)
+plt.subplot(1, 3, 1)
+plt.imshow(image_display)  # Ensure image is in correct format
+plt.title('Original')
+plt.axis('off')
 
-    # Resize images if necessary
-    image = cv2.resize(image, (200, 200))
-    marker_image = cv2.resize(marker_image, (200, 200))
+plt.subplot(1, 3, 2)
+plt.imshow(binary_image, cmap='gray')
+plt.title('Binary')
+plt.axis('off')
 
-    labeled_image, cost, F = compute_solution(image, marker_image, alpha)
+plt.subplot(1, 3, 3)
+plt.imshow(colored_labels)
+plt.title(f'cc-tree α={alpha}')
+plt.axis('off')
 
-    # Create a color image for visualization
-    colored_labels = np.zeros((labeled_image.shape[0], labeled_image.shape[1], 3))
-    for label in np.unique(labeled_image):
-        if label == 0:
-            continue  # Skip the background
-        mask = labeled_image == label
-        colored_labels[mask] = np.random.rand(3)  # Assign random color to each component
-
-    # Display the results
-    plt.figure(figsize=(15, 5))
-    plt.subplot(1, 3, 1)
-    plt.imshow(image)
-    plt.title('Original Image')
-    plt.axis('off')
-
-    plt.subplot(1, 3, 2)
-    plt.imshow(marker_image, cmap='gray')
-    plt.title('Marker Image')
-    plt.axis('off')
-
-    plt.subplot(1, 3, 3)
-    plt.imshow(colored_labels)
-    plt.title('Segmented Image')
-    plt.axis('off')
-
-    plt.show()
-
-# E.g for using, I suggest using a = 0.5
-main('/content/Virgo.jpg', '/content/marker_image.jpg', 0.5)
+plt.show()
