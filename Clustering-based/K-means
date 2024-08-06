@@ -1,16 +1,48 @@
 import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
-# Read and display the image
+# Define the display function
+def display(*args):
+    num_x = 1 + args[2][1]
+    if len(args) >= 4:
+        fig, axes = plt.subplots(num_x, len(args[0]), figsize=(args[3][0], args[3][1]))
+    else:
+        fig, axes = plt.subplots(num_x, len(args[0]), figsize=(5 * len(args[0]), 5 * num_x))
+
+    for i in range(len(args[0])):
+        j = 0
+        if num_x == 1:
+            axes[i].imshow(args[0][i], cmap='gray', vmin=0, vmax=255)
+            axes[i].set_title(args[1][i] if len(args) >= 2 else f"Image {i + 1}")
+            axes[i].axis('off')
+        else:
+            axes[j][i].imshow(args[0][i], cmap='gray', vmin=0, vmax=255)
+            axes[j][i].set_title(args[1][i] if len(args) >= 2 else f"Image {i + 1}")
+            axes[j][i].axis('off')
+
+            if args[2][1] == 1:
+                j += 1
+                f = np.fft.fft2(args[0][i])
+                fshift = np.fft.fftshift(f)
+                magnitude_spectrum = 20 * np.log(np.abs(fshift))
+                axes[j][i].imshow(magnitude_spectrum, cmap='gray')
+                axes[j][i].set_title('Magnitude spectrum ' + (args[1][i] if len(args) >= 2 else f"Image {i + 1}"))
+                axes[j][i].axis('off')
+
+    fig.tight_layout()
+    plt.show()
+
+# Read the image
 img = mpimg.imread('/content/taurus.jpg')
-plt.imshow(img)
-plt.axis('off')
-plt.show()
 
 # Convert the image to a format suitable for K-Means clustering
 X = img.reshape((img.shape[0] * img.shape[1], img.shape[2]))
+
+# Prepare lists for images and titles
+images = [img]
+titles = ['Original Image']
 
 # Perform K-Means clustering with different numbers of clusters and save the results
 for K in [2, 5, 10, 15, 20]:  # number of clusters
@@ -22,12 +54,14 @@ for K in [2, 5, 10, 15, 20]:  # number of clusters
     for k in range(K):
         img4[label == k] = kmeans.cluster_centers_[k]
 
-    # Reshape the image back to its original size and display it
+    # Reshape the image back to its original size
     img5 = img4.reshape((img.shape[0], img.shape[1], img.shape[2]))
-    plt.imshow(img5, interpolation='nearest')
-    plt.axis('off')
-    plt.title(f'K-Means Clustering with K = {K}')
-    plt.show()
 
-    # Save the clustered image
-    plt.imsave(f'kmeans_clustered_K_{K}.png', img5)
+    # Add the clustered image and its title
+    images.append(img5)
+    titles.append(f'K = {K}')
+
+# Display images
+display_options = [1, 0]  
+fig_size = (5 * len(images), 5)
+display(images, titles, display_options, fig_size)
