@@ -5,30 +5,57 @@ from skimage import io
 from skimage.filters import gaussian
 from skimage.segmentation import active_contour
 
-# Read the image and convert it to grayscale
+# Read the image
 img = io.imread('/content/sl5.jpeg')
+image = img.copy()
 img = rgb2gray(img)
 
-# Initialize the contour
+# Initialize contour
 s = np.linspace(0, 2 * np.pi, 400)
 r = 500 + 400 * np.sin(s)
 c = 500 + 400 * np.cos(s)
 init = np.array([r, c]).T
 
-# Perform segmentation using active contour
-snake = active_contour(
-    gaussian(img, sigma=0.1, preserve_range=True),  # Set preserve_range=True to maintain the original pixel values
-    init,
-    alpha=0.4,  # Alpha parameter
-    beta=0.5,   # Beta parameter corresponding to λi/λo
-    gamma=0.01)
+# Parameters for active contour
+params = [
+    (0.1, 0.1, 0.001),
+    (0.2, 0.1, 0.001),
+    (0.3, 0.1, 0.001),
+    (0.4, 0.1, 0.001),
+    (0.4, 0.1, 0.01),
+    (0.4, 0.1, 0.1),
+    (0.4, 0.2, 0.001),
+    (0.4, 0.5, 0.001)
+]
 
-# Display the result
-fig, ax = plt.subplots(figsize=(7, 7))
-ax.imshow(img, cmap=plt.cm.gray)
-ax.plot(snake[:, 1], snake[:, 0], '-y', lw=1)
-ax.axis('off')  # Turn off axis and labels
+# Apply active contour and save results
+snakes = []
+for alpha, beta, gamma in params:
+    snake = active_contour(
+        gaussian(img, sigma=0.1, preserve_range=True),
+        init,
+        alpha=alpha,
+        beta=beta,
+        gamma=gamma
+    )
+    snakes.append(snake)
 
-# Save the result
-plt.savefig('result_image.jpg', bbox_inches='tight', pad_inches=0)
-plt.show()
+# Define display function to plot contours
+def display_contours(images, contours, titles, lw=1.5):
+    num_x = 1  # Only one row to display images and contours
+    fig, axes = plt.subplots(num_x, len(images), figsize=(5 * len(images), 5 * num_x))
+
+    for i in range(len(images)):
+        axes[i].imshow(images[i], cmap='gray', vmin=0, vmax=255)
+        axes[i].plot(contours[i][:, 1], contours[i][:, 0], color='red', lw=lw)
+        axes[i].set_title(titles[i] if titles else f"Image {i + 1}")
+        axes[i].axis('off')
+
+    fig.tight_layout()
+    plt.show()
+
+# Generate titles including parameters for each snake
+titles = ['Original Image'] + [f'snake (α={alpha}, β={beta}, γ={gamma})' for alpha, beta, gamma in params]
+
+# Display the original image and the generated snakes
+display_contours([image] + [image]*len(snakes), [init] + snakes, titles, lw=1.5)
