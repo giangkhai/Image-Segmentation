@@ -1,18 +1,17 @@
-import numpy as np
 import cv2 as cv
-from matplotlib import pyplot as plt
-
-# Read the image
+#Read images
 img = cv.imread('/content/mol.jpg')
+img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+o_img = img.copy()
 assert img is not None, "file could not be read, check with os.path.exists()"
 
-# Convert to grayscale
+#Grayscale
 gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-# Threshold the image using Otsu's method
+#Otsu thresholded
 ret, thresh = cv.threshold(gray, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
 
-# Remove noise
+#Denoised
 kernel = np.ones((3,3), np.uint8)
 opening = cv.morphologyEx(thresh, cv.MORPH_OPEN, kernel, iterations=2)
 
@@ -47,19 +46,11 @@ markers_dilated = markers_dilated.astype(np.int32)
 
 # Apply the Watershed algorithm with the dilated markers
 markers_dilated = cv.watershed(img, markers_dilated)
-img[markers_dilated == -1] = [0, 255, 255]
+img[markers_dilated == -1] = [255, 0, 0]
 
-# Save intermediate images
-cv.imwrite('gray_image.jpg', gray)
-cv.imwrite('thresh_image.jpg', thresh)
-cv.imwrite('opening_image.jpg', opening)
-cv.imwrite('sure_bg_image.jpg', sure_bg)
-cv.imwrite('sure_fg_image.jpg', sure_fg)
-cv.imwrite('unknown_image.jpg', unknown)
-cv.imwrite('markers_image.jpg', markers_dilated)
-cv.imwrite('result_image.jpg', img)
+# Apply log
+markers_1 = 200*np.log(1+markers_dilated**2)/np.log(1+markers_dilated.max()**2)
+markers_1 = np.uint8(markers_1)
 
-# Display the final result
-plt.imshow(cv.cvtColor(img, cv.COLOR_BGR2RGB))
-plt.axis('off')
-plt.show()
+# Display images
+display([o_img, markers_1, img], ["Original", "Log of regions", "Watershed"], (1, 0))
