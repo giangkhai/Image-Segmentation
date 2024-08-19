@@ -55,7 +55,7 @@ def display_contours(images, contours, titles, lw=1.5):
     plt.show()
 
 # Generate titles including parameters for each snake
-titles = ['Original Image'] + [f'snake (α={alpha}, β={beta}, γ={gamma})' for alpha, beta, gamma in params]
+titles = ['Original'] + [f'snake (α={alpha}, β={beta}, γ={gamma})' for alpha, beta, gamma in params]
 
 # Display the original image and the generated snakes
 display_contours([image] + [image]*len(snakes), [init] + snakes, titles, lw=1.5)
