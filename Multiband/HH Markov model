@@ -41,7 +41,7 @@ plt.figure(figsize=(12, 6))
 
 plt.subplot(1, 3, 1)
 plt.imshow(I)
-plt.title('Original Image')
+plt.title('Original')
 plt.axis('off')
 
 plt.subplot(1, 3, 2)
@@ -51,11 +51,7 @@ plt.axis('off')
 
 plt.subplot(1, 3, 3)
 plt.imshow(segmented_image)
-plt.title('Segmented Image')
+plt.title('Hidden Markov N = 8')
 plt.axis('off')
 
 plt.show()
-
-# Save the segmented image
-segmented_image = (segmented_image * 255).astype(np.uint8)  # Convert back to [0, 255]
-cv2.imwrite('segmented_image.png', cv2.cvtColor(segmented_image, cv2.COLOR_RGB2BGR))
